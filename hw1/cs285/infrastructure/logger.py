@@ -44,6 +44,7 @@ class Logger:
                 padding = np.tile([videos[i][-1]], (max_length-videos[i].shape[0],1,1,1))
                 videos[i] = np.concatenate([videos[i], padding], 0)
 
+        print("max video length is {}".format(max_length))
         # log videos to tensorboard event file
         videos = np.stack(videos[:max_videos_to_save], 0)
         self.log_video(videos, video_title, step, fps=fps)

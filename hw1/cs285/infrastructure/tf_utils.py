@@ -24,10 +24,10 @@ def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=
             output_placeholder: the result of a forward pass through the hidden layers + the output layer
     """
     output_placeholder = input_placeholder
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         for _ in range(n_layers):
-            output_placeholder = TODO # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
-        output_placeholder = TODO # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
+            output_placeholder = tf.compat.v1.layers.dense(output_placeholder, size, activation=activation) # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
+        output_placeholder = tf.compat.v1.layers.dense(output_placeholder, output_size, activation=output_activation) # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
     return output_placeholder
 
 
@@ -38,11 +38,11 @@ def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=
 def create_tf_session(use_gpu, gpu_frac=0.6, allow_gpu_growth=True, which_gpu=0):
     if use_gpu:
         # gpu options
-        gpu_options = tf.GPUOptions(
+        gpu_options = tf.compat.v1.GPUOptions(
             per_process_gpu_memory_fraction=gpu_frac,
             allow_growth=allow_gpu_growth)
         # TF config
-        config = tf.ConfigProto(
+        config = tf.compat.v1.ConfigProto(
             gpu_options=gpu_options,
             log_device_placement=False,
             allow_soft_placement=True,
@@ -52,10 +52,10 @@ def create_tf_session(use_gpu, gpu_frac=0.6, allow_gpu_growth=True, which_gpu=0)
         os.environ["CUDA_VISIBLE_DEVICES"] = str(which_gpu)
     else:
         # TF config without gpu
-        config = tf.ConfigProto(device_count={'GPU': 0})
+        config = tf.compat.v1.ConfigProto(device_count={'GPU': 0})
 
     # use config to create TF session
-    sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
     return sess
 
 def lrelu(x, leak=0.2):

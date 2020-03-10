@@ -32,7 +32,7 @@ class Loaded_Gaussian_Policy(BasePolicy):
     ##################################
 
     def define_placeholders(self):
-        self.obs_bo = tf.placeholder(tf.float32, [None, None])
+        self.obs_bo = tf.compat.v1.placeholder(tf.float32, [None, None])
 
     def define_forward_pass(self):
 
