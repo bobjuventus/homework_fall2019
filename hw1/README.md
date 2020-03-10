@@ -26,7 +26,7 @@ do
 done
 ```
 
-![bc_params](results/bc.png)
+![bc_params](cs285/results/bc.png)
 
 
 ## DAgger
@@ -35,6 +35,6 @@ done
 python cs285/scripts/run_hw1_behavior_cloning.py --expert_policy_file cs285/policies/experts/Humanoid.pkl --env_name Humanoid-v2 --exp_name test_bc_humanoid --n_iter 51 --do_dagger --expert_data cs285/expert_data/expert_data_Humanoid-v2.pkl --num_agent_train_steps_per_iter 5000 --eval_batch_size 5000 --video_log_freq -1
 ```
 
-![dagger](results/dagger.png)
+![dagger](cs285/results/dagger.png)
 
 From the recorded video, it can clearly be seen that the humanoid starts to learn how to run at later steps.
