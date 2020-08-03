@@ -68,3 +68,13 @@ python cs285/scripts/run_hw3_actor_critic.py --env_name HalfCheetah-v2 --ep_len 
 And here is the result. It can be seen that they reach the goal return within the experimented iterations.
 
 ![p4](cs285/images/p4.png)
+
+## Remaining question
+
+One thing I don't quite understand is that sometimes returned rewards hit MAX first but then drop later. When comparing to the critic loss, it can often be seen that critic loss is high when rewards are high, but lower when rewards are lower.
+
+My understanding is that we are trying to minimize critic loss to train critic NN, and that's driving the decrease of critic loss. However, advantage function which contributes to actor loss is actually defined as the critic loss we are minimizing! What this means is that if we do a good job minimizing the critic loss, the advantage function will approach zero which means no action is particularly favorable. Therefore, sub-optimal action may be chosen and cause total reward to drop.
+
+Here is an example:
+
+![question](cs285/images/question.png)
