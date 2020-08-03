@@ -7,7 +7,29 @@ import os
 def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=tf.tanh, output_activation=None):
     
     # TODO: GETTHIS from HW1
+    """
+        Builds a feedforward neural network
 
+        arguments:
+            input_placeholder: placeholder variable for the state (batch_size, input_size)
+            scope: variable scope of the network
+
+            n_layers: number of hidden layers
+            size: dimension of each hidden layer
+            activation: activation of each hidden layer
+
+            output_size: size of the output layer
+            output_activation: activation of the output layer
+
+        returns:
+            output_placeholder: the result of a forward pass through the hidden layers + the output layer
+    """
+    output_placeholder = input_placeholder
+    with tf.compat.v1.variable_scope(scope):
+        for _ in range(n_layers):
+            output_placeholder = tf.layers.dense(output_placeholder, size, activation=activation) # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
+        output_placeholder = tf.layers.dense(output_placeholder, output_size, activation=output_activation) # HINT: use tf.layers.dense (specify <input>, <size>, activation=<?>)
+    return output_placeholder
 
 ############################################
 ############################################
@@ -30,10 +52,10 @@ def create_tf_session(use_gpu, gpu_frac=0.6, allow_gpu_growth=True, which_gpu=0)
         os.environ["CUDA_VISIBLE_DEVICES"] = str(which_gpu)
     else:
         # TF config without gpu
-        config = tf.ConfigProto(device_count={'GPU': 0})
+        config = tf.compat.v1.ConfigProto(device_count={'GPU': 0})
 
     # use config to create TF session
-    sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
     return sess
 
 def lrelu(x, leak=0.2):
