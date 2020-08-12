@@ -21,7 +21,7 @@ class FFModel(BaseModel):
         self.scope = scope
 
         # build TF graph
-        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
             self.build_graph()
         self.define_train_op()
 
@@ -33,42 +33,56 @@ class FFModel(BaseModel):
 
     def define_placeholders(self):
 
-        self.obs_pl = tf.placeholder(shape=[None, self.ob_dim], name="ob", dtype=tf.float32)
-        self.acs_pl = tf.placeholder(shape=[None, self.ac_dim], name="ac", dtype=tf.float32)
-        self.delta_labels = tf.placeholder(shape=[None, self.ob_dim], name="labels", dtype=tf.float32)
+        self.obs_pl = tf.compat.v1.placeholder(shape=[None, self.ob_dim], name="ob", dtype=tf.float32)
+        self.acs_pl = tf.compat.v1.placeholder(shape=[None, self.ac_dim], name="ac", dtype=tf.float32)
+        self.delta_labels = tf.compat.v1.placeholder(shape=[None, self.ob_dim], name="labels", dtype=tf.float32)
 
-        self.obs_mean_pl = tf.placeholder(shape=[self.ob_dim], name="obs_mean", dtype=tf.float32)
-        self.obs_std_pl = tf.placeholder(shape=[self.ob_dim], name="obs_std", dtype=tf.float32)
-        self.acs_mean_pl = tf.placeholder(shape=[self.ac_dim], name="acs_mean", dtype=tf.float32)
-        self.acs_std_pl = tf.placeholder(shape=[self.ac_dim], name="acs_std", dtype=tf.float32)
-        self.delta_mean_pl = tf.placeholder(shape=[self.ob_dim], name="delta_mean", dtype=tf.float32)
-        self.delta_std_pl = tf.placeholder(shape=[self.ob_dim], name="delta_std", dtype=tf.float32)
+        self.obs_mean_pl = tf.compat.v1.placeholder(shape=[self.ob_dim], name="obs_mean", dtype=tf.float32)
+        self.obs_std_pl = tf.compat.v1.placeholder(shape=[self.ob_dim], name="obs_std", dtype=tf.float32)
+        self.acs_mean_pl = tf.compat.v1.placeholder(shape=[self.ac_dim], name="acs_mean", dtype=tf.float32)
+        self.acs_std_pl = tf.compat.v1.placeholder(shape=[self.ac_dim], name="acs_std", dtype=tf.float32)
+        self.delta_mean_pl = tf.compat.v1.placeholder(shape=[self.ob_dim], name="delta_mean", dtype=tf.float32)
+        self.delta_std_pl = tf.compat.v1.placeholder(shape=[self.ob_dim], name="delta_std", dtype=tf.float32)
 
     def define_forward_pass(self):
         # normalize input data to mean 0, std 1
         obs_unnormalized = self.obs_pl
         acs_unnormalized = self.acs_pl
         # Hint: Consider using the normalize function defined in infrastructure.utils for the following two lines
-        obs_normalized = # TODO(Q1) Define obs_normalized using obs_unnormalized,and self.obs_mean_pl and self.obs_std_pl
-        acs_normalized = # TODO(Q2) Define acs_normalized using acs_unnormalized and self.acs_mean_pl and self.acs_std_pl
+        obs_normalized = normalize(obs_unnormalized, self.obs_mean_pl, self.obs_std_pl) # TODO(Q1) Define obs_normalized using obs_unnormalized and self.obs_mean_pl and self.obs_std_pl
+        acs_normalized = normalize(acs_unnormalized, self.acs_mean_pl, self.acs_std_pl) # TODO(Q2) Define acs_normalized using acs_unnormalized and self.acs_mean_pl and self.acs_std_pl
 
         # predicted change in obs
         concatenated_input = tf.concat([obs_normalized, acs_normalized], axis=1)
         # Hint: Note that the prefix delta is used in the variable below to denote changes in state, i.e. (s'-s)
-        self.delta_pred_normalized = # TODO(Q1) Use the build_mlp function and the concatenated_input above to define a neural network that predicts unnormalized delta states (i.e. change in state)
-        self.delta_pred_unnormalized = # TODO(Q1) Unnormalize the the delta_pred above using the unnormalize function, and self.delta_mean_pl and self.delta_std_pl
-        self.next_obs_pred = # TODO(Q1) Predict next observation using current observation and delta prediction (not that next_obs here is unnormalized)
+        # TODO(Q1) Use the build_mlp function and the concatenated_input above to define a neural network that predicts unnormalized delta states (i.e. change in state)
+        self.delta_pred_normalized = build_mlp(concatenated_input, self.ob_dim, self.scope, self.n_layers, self.size)
+        # TODO(Q1) Unnormalize the the delta_pred above using the unnormalize function, and self.delta_mean_pl and self.delta_std_pl
+        self.delta_pred_unnormalized = unnormalize(self.delta_pred_normalized, self.delta_mean_pl, self.delta_std_pl)
+        # TODO(Q1) Predict next observation using current observation and delta prediction (note that next_obs here is unnormalized)
+        self.next_obs_pred = self.delta_pred_unnormalized + self.obs_pl
 
     def define_train_op(self):
 
         # normalize the labels
-        self.delta_labels_normalized =  # TODO(Q1) Define a normalized version of delta_labels using self.delta_labels (which are unnormalized), and self.delta_mean_pl and self.delta_std_pl
+        # TODO(Q1) Define a normalized version of delta_labels using self.delta_labels (which are unnormalized), and self.delta_mean_pl and self.delta_std_pl
+        self.delta_labels_normalized = normalize(self.delta_labels, self.delta_mean_pl, self.delta_std_pl)
 
         # compared predicted deltas to labels (both should be normalized)
-        self.loss = # TODO(Q1) Define a loss function that takes as input normalized versions of predicted change in state and ground truth change in state
-        self.train_op = # TODO(Q1) Define a train_op to minimize the loss defined above. Adam optimizer will work well.
+        # TODO(Q1) Define a loss function that takes as input normalized versions of predicted change in state and ground truth change in state
+        self.loss = tf.compat.v1.losses.mean_squared_error(labels=self.delta_labels_normalized, predictions=self.delta_pred_normalized)
+        # TODO(Q1) Define a train_op to minimize the loss defined above. Adam optimizer will work well.
+        self.train_op = tf.compat.v1.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
     #############################
+
+    def data_stats_helper(self, data_statistics):
+        return {self.obs_mean_pl: data_statistics['obs_mean'],
+                self.obs_std_pl: data_statistics['obs_std'],
+                self.acs_mean_pl: data_statistics['acs_mean'],
+                self.acs_std_pl: data_statistics['acs_std'],
+                self.delta_mean_pl: data_statistics['delta_mean'],
+                self.delta_std_pl: data_statistics['delta_std']}
 
     def get_prediction(self, obs, acs, data_statistics):
         if len(obs.shape)>1:
@@ -77,9 +91,16 @@ class FFModel(BaseModel):
         else:
             observations = obs[None]
             actions = acs [None]
-        return # TODO(Q1) Run model prediction on the given batch of data
+        # Given new observations and actions, update the pl in data_statistics
+        feed_d = {self.obs_pl: observations, self.acs_pl: actions}
+        feed_d.update(self.data_stats_helper(data_statistics))
+        return self.sess.run(self.next_obs_pred, feed_dict=feed_d) # TODO(Q1) Run model prediction on the given batch of data
 
     def update(self, observations, actions, next_observations, data_statistics):
         # train the model
-        _, loss = # TODO(Q1) Run the defined train_op here, and also return the loss being optimized (on this batch of data)
+        # TODO(Q1) Run the defined train_op here, and also return the loss being optimized (on this batch of data)
+        feed_d = {self.obs_pl: observations, self.acs_pl: actions, 
+                  self.delta_labels: next_observations - observations}
+        feed_d.update(self.data_stats_helper(data_statistics))
+        _, loss = self.sess.run([self.train_op, self.loss], feed_dict = feed_d)
         return loss

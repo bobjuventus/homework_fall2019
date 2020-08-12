@@ -57,9 +57,9 @@ def get_env_kwargs(env_name):
 
 
 def lander_model(obs, num_actions, scope, reuse=False):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         out = obs
-        with tf.variable_scope("action_value"):
+        with tf.compat.v1.variable_scope("action_value"):
             out = layers.fully_connected(out, num_outputs=64, activation_fn=tf.nn.relu)
             out = layers.fully_connected(out, num_outputs=64, activation_fn=tf.nn.relu)
             out = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
@@ -68,15 +68,15 @@ def lander_model(obs, num_actions, scope, reuse=False):
 
 
 def atari_model(img_input, num_actions, scope, reuse=False):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         out = tf.cast(img_input, tf.float32) / 255.0
-        with tf.variable_scope("convnet"):
+        with tf.compat.v1.variable_scope("convnet"):
             # original architecture
             out = layers.convolution2d(out, num_outputs=32, kernel_size=8, stride=4, activation_fn=tf.nn.relu)
             out = layers.convolution2d(out, num_outputs=64, kernel_size=4, stride=2, activation_fn=tf.nn.relu)
             out = layers.convolution2d(out, num_outputs=64, kernel_size=3, stride=1, activation_fn=tf.nn.relu)
         out = layers.flatten(out)
-        with tf.variable_scope("action_value"):
+        with tf.compat.v1.variable_scope("action_value"):
             out = layers.fully_connected(out, num_outputs=512, activation_fn=tf.nn.relu)
             out = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
 
