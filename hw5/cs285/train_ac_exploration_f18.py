@@ -40,7 +40,7 @@ def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=
         Hint: use tf.layers.dense    
     """
     output_placeholder = input_placeholder
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         for _ in range(n_layers):
             output_placeholder = tf.layers.dense(output_placeholder, size, activation=activation)
         output_placeholder = tf.layers.dense(output_placeholder, output_size, activation=output_activation)
@@ -81,11 +81,11 @@ class Agent(object):
         self.normalize_advantages = estimate_advantage_args['normalize_advantages']
 
     def init_tf_sess(self):
-        tf_config = tf.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)
+        tf_config = tf.compat.v1.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)
         tf_config.gpu_options.allow_growth = True # may need if using GPU
-        self.sess = tf.Session(config=tf_config)
+        self.sess = tf.compat.v1.Session(config=tf_config)
         self.sess.__enter__() # equivalent to `with self.sess:`
-        tf.global_variables_initializer().run() #pylint: disable=E1101
+        tf.compat.v1.global_variables_initializer().run() #pylint: disable=E1101
 
     def define_placeholders(self):
         """
@@ -98,12 +98,12 @@ class Agent(object):
                 sy_ac_na: placeholder for actions
                 sy_adv_n: placeholder for advantages
         """
-        sy_ob_no = tf.placeholder(shape=[None, self.ob_dim], name="ob", dtype=tf.float32)
+        sy_ob_no = tf.compat.v1.placeholder(shape=[None, self.ob_dim], name="ob", dtype=tf.float32)
         if self.discrete:
-            sy_ac_na = tf.placeholder(shape=[None], name="ac", dtype=tf.int32) 
+            sy_ac_na = tf.compat.v1.placeholder(shape=[None], name="ac", dtype=tf.int32) 
         else:
-            sy_ac_na = tf.placeholder(shape=[None, self.ac_dim], name="ac", dtype=tf.float32) 
-        sy_adv_n = tf.placeholder(shape=[None], name="adv", dtype=tf.float32)
+            sy_ac_na = tf.compat.v1.placeholder(shape=[None, self.ac_dim], name="ac", dtype=tf.float32) 
+        sy_adv_n = tf.compat.v1.placeholder(shape=[None], name="adv", dtype=tf.float32)
         return sy_ob_no, sy_ac_na, sy_adv_n
 
     def policy_forward_pass(self, sy_ob_no):
@@ -161,14 +161,14 @@ class Agent(object):
         
                       mu + sigma * z,         z ~ N(0, I)
         
-                 This reduces the problem to just sampling z. (Hint: use tf.random_normal!)
+                 This reduces the problem to just sampling z. (Hint: use tf.random.normal!)
         """
         if self.discrete:
             sy_logits_na = policy_parameters
             sy_sampled_ac = tf.squeeze(tf.multinomial(sy_logits_na, num_samples=1), axis=1)
         else:
             sy_mean, sy_logstd = policy_parameters
-            sy_sampled_ac = sy_mean + tf.exp(sy_logstd) * tf.random_normal(tf.shape(sy_mean), 0, 1)
+            sy_sampled_ac = sy_mean + tf.exp(sy_logstd) * tf.random.normal(tf.shape(sy_mean), 0, 1)
         return sy_sampled_ac
 
     def get_log_prob(self, policy_parameters, sy_ac_na):
@@ -194,7 +194,7 @@ class Agent(object):
         """
         if self.discrete:
             sy_logits_na = policy_parameters
-            sy_logprob_n = tf.distributions.Categorical(logits=sy_logits_na).log_prob(sy_ac_na)
+            sy_logprob_n = tf.compat.v1.distributions.Categorical(logits=sy_logits_na).log_prob(sy_ac_na)
         else:
             sy_mean, sy_logstd = policy_parameters
             sy_logprob_n = tfp.distributions.MultivariateNormalDiag(
@@ -236,7 +236,7 @@ class Agent(object):
         self.sy_logprob_n = self.get_log_prob(self.policy_parameters, self.sy_ac_na)
 
         actor_loss = tf.reduce_sum(-self.sy_logprob_n * self.sy_adv_n)
-        self.actor_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(actor_loss)
+        self.actor_update_op = tf.compat.v1.train.AdamOptimizer(self.learning_rate).minimize(actor_loss)
 
         # define the critic
         self.critic_prediction = tf.squeeze(build_mlp(
@@ -245,9 +245,9 @@ class Agent(object):
                                 "nn_critic",
                                 n_layers=self.n_layers,
                                 size=self.size))
-        self.sy_target_n = tf.placeholder(shape=[None], name="critic_target", dtype=tf.float32)
-        self.critic_loss = tf.losses.mean_squared_error(self.sy_target_n, self.critic_prediction)
-        self.critic_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(self.critic_loss)
+        self.sy_target_n = tf.compat.v1.placeholder(shape=[None], name="critic_target", dtype=tf.float32)
+        self.critic_loss = tf.compat.v1.losses.mean_squared_error(self.sy_target_n, self.critic_prediction)
+        self.critic_update_op = tf.compat.v1.train.AdamOptimizer(self.learning_rate).minimize(self.critic_loss)
 
     def sample_trajectories(self, itr, env):
         # Collect paths until we have enough timesteps
@@ -414,7 +414,7 @@ def train_AC(
     ########################################################################
 
     # Set random seeds
-    tf.set_random_seed(seed)
+    tf.compat.v1.set_random_seed(seed)
     np.random.seed(seed)
     env.seed(seed)
 
@@ -536,18 +536,18 @@ def train_AC(
             if dm == 'ex2':
                 ### PROBLEM 3
                 ### YOUR CODE HERE
-                raise NotImplementedError
+                ll, kl, elbo = exploration.fit_density_model(ob_no)
             elif dm == 'hist' or dm == 'rbf':
                 ### PROBLEM 1
                 ### YOUR CODE HERE
-                raise NotImplementedError
+                exploration.fit_density_model(ob_no)
             else:
                 assert False
 
             # 2. Modify the reward
             ### PROBLEM 1
             ### YOUR CODE HERE
-            raise NotImplementedError
+            re_n = exploration.modify_reward(re_n, ob_no)
 
             print('average state', np.mean(ob_no, axis=0))
             print('average action', np.mean(ac_na, axis=0))

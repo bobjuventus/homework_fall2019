@@ -40,9 +40,8 @@ class Exploration(object):
                 bonus and then modify the rewards with the bonus
                 and store that in new_rewards, which you will return
         """
-        raise NotImplementedError
-        bonus = None
-        new_rewards = None
+        bonus = self.compute_reward_bonus(states)
+        new_rewards = rewards + bonus
         return new_rewards
 
 class DiscreteExploration(Exploration):
@@ -57,17 +56,18 @@ class DiscreteExploration(Exploration):
             args:
                 states: (bsize, ob_dim)
         """
-        raise NotImplementedError
+        for state in states:
+            self.density_model.update_count(state, 1)
 
-    def bonus_function(self, count):
+    def bonus_function(self, counts):
         """
             ### PROBLEM 1
             ### YOUR CODE HERE
 
             args:
-                count: np array (bsize)
+                counts: np array (bsize)
         """
-        raise NotImplementedError
+        return 1/np.sqrt(counts)
 
     def compute_reward_bonus(self, states):
         """
@@ -76,9 +76,12 @@ class DiscreteExploration(Exploration):
 
             args:
                 states: (bsize, ob_dim)
+
+            returns:
+                bonus: (bsize)
         """
-        count = raise NotImplementedError
-        bonus = raise NotImplementedError
+        counts = self.density_model.get_count(states)
+        bonus = self.bonus_coeff * self.bonus_function(counts)
         return bonus
 
 
@@ -99,7 +102,7 @@ class ContinuousExploration(Exploration):
             args:
                 prob: np array (bsize,)
         """
-        raise NotImplementedError
+        return -np.log(prob)
 
     def compute_reward_bonus(self, states):
         """
@@ -109,9 +112,8 @@ class ContinuousExploration(Exploration):
             args:
                 states: (bsize, ob_dim)
         """
-        raise NotImplementedError
-        prob = None
-        bonus = None
+        prob = self.density_model.get_prob(states)
+        bonus = self.bonus_coeff * self.bonus_function(prob)
         return bonus
 
 
@@ -135,6 +137,10 @@ class ExemplarExploration(ContinuousExploration):
         self.bsize = bsize   
 
     def sample_idxs(self, states, batch_size):
+        """Used when replay buffer size is not big yet.
+        Randomly draw positives and negatives from input states while making sure
+        they are different samples.
+        """
         states = copy.deepcopy(states)
         data_size = len(states)
         pos_idxs = np.random.randint(data_size, size=batch_size)
@@ -148,6 +154,9 @@ class ExemplarExploration(ContinuousExploration):
         return positives, negatives
 
     def sample_idxs_replay(self, states, batch_size):
+        """Positive samples are drawn from the input states
+        Negative samples are drawn from the replay buffer
+        """
         states = copy.deepcopy(states)
         data_size = len(states)
         pos_idxs = np.random.randint(data_size, size=batch_size)
