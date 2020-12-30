@@ -57,7 +57,7 @@ Results:
 
 ![p3](cs285/images/p3.png)
 
-It can be seen that similar to KDE, it achieves high reward around 60-80 iterations, but then drop. In general, rewards increase monotonically in no exploration case but may not reach a very high level. This makes sense since there is no bonus for exploration so actor will always the action which returns the highest rewards that come from the environment. However, it may stuck at local minimum due to no exploration. With no exploration, we may get higher rewards, but it is not stable to stay at high rewards due to exploration. The design of exploration-exploitation may need to be further fine-tuned.
+It can be seen that similar to KDE, it achieves high reward around 60-80 iterations, but then drop. In general, rewards increase monotonically in no exploration case but may not reach a very high level. This makes sense since there is no bonus for exploration so actor will always the action which returns the highest rewards that come from the environment. However, it may stuck at local minimum due to no exploration. With exploration, we may get higher rewards, but it is not stable to stay at high rewards due to exploration. The design of exploration-exploitation may need to be further fine-tuned.
 
 #### Question 4: experiments on Half-Cheetah env with no exploration and two exploration settings
 
